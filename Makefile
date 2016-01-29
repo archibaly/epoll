@@ -7,7 +7,7 @@ SRCS += socket.c
 OBJS += main.o
 OBJS += socket.o
 
-CFLAGS = -Wall
+CFLAGS = -Wall -DDEBUG
 
 all: $(EXE)
 

@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
 	struct epoll_event *events;
 
 	if (argc != 2) {
-		fprintf(stderr, "Usage: %s [port]\n", argv[0]);
+		fprintf(stderr, "usage: %s [port]\n", argv[0]);
 		exit(EXIT_FAILURE);
 	}
 
@@ -27,7 +27,9 @@ int main(int argc, char *argv[])
 
 	epfd = epoll_create(1);
 	if (epfd == -1) {
+	#ifdef DEBUG
 		perror("epoll_create");
+	#endif
 		abort();
 	}
 
@@ -35,7 +37,9 @@ int main(int argc, char *argv[])
 	event.events = EPOLLIN | EPOLLET;
 	ret = epoll_ctl(epfd, EPOLL_CTL_ADD, sockfd, &event);
 	if (ret == -1) {
+	#ifdef DEBUG
 		perror("epoll_ctl");
+	#endif
 		abort();
 	}
 
@@ -53,7 +57,9 @@ int main(int argc, char *argv[])
 				(!(events[i].events & EPOLLIN))) {
 				/* An error has occured on this fd, or the socket is not
 				   ready for reading (why were we notified then?) */
+			#ifdef DEBUG
 				fprintf(stderr, "epoll error\n");
+			#endif
 				close(events[i].data.fd);
 				continue;
 			} else if (sockfd == events[i].data.fd) {
@@ -73,7 +79,9 @@ int main(int argc, char *argv[])
 							   connections. */
 							break;
 						} else {
+						#ifdef DEBUG
 							perror("accept");
+						#endif
 							break;
 						}
 					}
@@ -95,7 +103,9 @@ int main(int argc, char *argv[])
 					event.events = EPOLLIN | EPOLLET;
 					ret = epoll_ctl(epfd, EPOLL_CTL_ADD, infd, &event);
 					if (ret == -1) {
+					#ifdef DEBUG
 						perror("epoll_ctl");
+					#endif
 						abort();
 					}
 				}
@@ -117,7 +127,9 @@ int main(int argc, char *argv[])
 						/* If errno == EAGAIN, that means we have read all
 						   data. So go back to the main loop. */
 						if (errno != EAGAIN) {
+						#ifdef DEBUG
 							perror("read");
+						#endif
 							done = 1;
 						}
 						break;
@@ -131,7 +143,9 @@ int main(int argc, char *argv[])
 					/* Write the buffer to standard output */
 					ret = write(STDOUT_FILENO, buf, count);
 					if (ret == -1) {
+					#ifdef DEBUG
 						perror("write");
+					#endif
 						abort();
 					}
 				}

@@ -16,13 +16,17 @@ void socket_set_non_blocking(int sockfd)
 
 	flags = fcntl(sockfd, F_GETFL, 0);
 	if (flags == -1) {
+	#ifdef DEBUG
 		perror("fcntl");
+	#endif
 		abort();
 	}
 
 	flags |= O_NONBLOCK;
 	if (fcntl(sockfd, F_SETFL, flags) == -1) {
+	#ifdef DEBUG
 		perror("fcntl");
+	#endif
 		abort();
 	}
 }
@@ -35,7 +39,9 @@ static void socket_reuse_endpoint(int sockfd)
 		 * if we cannot set an option then there's something very wrong
 		 * with the system, so we abort the application
 		 */
+	#ifdef DEBUG
 		perror("setsockopt");
+	#endif
 		abort();
 	}
 }
@@ -60,7 +66,9 @@ int socket_create_and_bind(char *port)
 
 	ret = getaddrinfo(NULL, port, &hints, &result);
 	if (ret != 0) {
+	#ifdef DEBUG
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(ret));
+	#endif
 		abort();
 	}
 
@@ -76,13 +84,17 @@ int socket_create_and_bind(char *port)
 		}
 
 		if (close(sockfd) == -1) {
+		#ifdef DEBUG
 			perror("close");
+		#endif
 			abort();
 		}
 	}
 
 	if (rp == NULL) {
+	#ifdef DEBUG
 		fprintf(stderr, "Could not bind\n");
+	#endif
 		abort();
 	}
 
@@ -94,7 +106,9 @@ int socket_create_and_bind(char *port)
 void socket_start_listening(int sockfd)
 {
 	if (listen(sockfd, SOMAXCONN) == -1) {
+	#ifdef DEBUG
 		perror("listen");
+	#endif
 		abort();
 	}
 }
