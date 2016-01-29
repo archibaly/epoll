@@ -1,3 +1,6 @@
+#include <unistd.h>
+#include <stdio.h>
+
 #include "poll.h"
 
 #define MAX_EVENTS	64
@@ -29,21 +32,21 @@ poll_event_t *poll_event_new(int fd, uint32_t events)
 	return event;
 }
 
-int epoll_event_mod(int epoll_fd, int fd)
+int epoll_ctl_mod(int epoll_fd, int fd, uint32_t events)
 {
 	struct epoll_event event;
 	memset(&event, 0, sizeof(struct epoll_event));
-	event.fd = fd;
-	event.events = event->events;
+	event.data.fd = fd;
+	event.events = events;
 	return epoll_ctl(epoll_fd, EPOLL_CTL_MOD, fd, &event);
 }
 
-int epoll_event_add(int epoll_fd, int fd)
+int epoll_ctl_add(int epoll_fd, int fd, uint32_t events)
 {
 	struct epoll_event event;
 	memset(&event, 0, sizeof(struct epoll_event));
-	event.fd = fd;
-	event.events = event->events;
+	event.data.fd = fd;
+	event.events = events;
 	return epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &event);
 }
 
@@ -56,12 +59,12 @@ int poll_event_add(int epoll_fd, int fd, uint32_t events, poll_event_t **poll_ev
 	HASH_FIND_INT(hash_head, &fd, event);
 	if (event) {
 		event->events |= events;
-		return epoll_event_mod(epoll_fd, fd);
+		return epoll_ctl_mod(epoll_fd, fd, event->events);
 	} else {
 		event = poll_event_new(fd, events);
 		HASH_ADD_INT(hash_head, fd, event);
 		*poll_event = event;
-		return epoll_event_add(epoll_fd, fd);
+		return epoll_ctl_add(epoll_fd, fd, event->events);
 	}
 }
 
@@ -94,13 +97,39 @@ void poll_event_del(int epoll_fd, int fd)
 	poll_event_t *event;
 	HASH_FIND_INT(hash_head, &fd, event);
 	if (event) {
-		HASH_DEL(hash_head, event);
-		close(fd);
-		free(event);
 		epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
+		close(fd);
+		HASH_DEL(hash_head, event);
+		free(event);
 	}
 }
 
-int poll_event_process(const poll_event_t *poll_event)
+void poll_event_process(int epoll_fd)
 {
+	struct epoll_event events[MAX_EVENTS];
+	for (;;) {
+		int fds = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
+
+		int i;
+		for (i = 0; i < fds; i++) {
+			poll_event_t *event;
+			HASH_FIND_INT(hash_head, &events[i].data.fd, event);
+			if (event) {
+				if ((events[i].events & EPOLLIN) || (events[i].events & EPOLLPRI)) {
+					if (event->accept_callback)
+						event->accept_callback(event, events[i]);
+					if (event->read_callback)
+						event->read_callback(event, events[i]);
+				}
+				if (events[i].events & EPOLLOUT) {
+					if (event->write_callback)
+						event->write_callback(event, events[i]);
+				}
+				if ((events[i].events & EPOLLRDHUP) || (events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP)) {
+					if (event->close_callback)
+						event->close_callback(event, events[i]);
+				}
+			}
+		}
+	}
 }

@@ -3,9 +3,11 @@ EXE = epoll
 
 SRCS += main.c
 SRCS += socket.c
+SRCS += poll.c
 
 OBJS += main.o
 OBJS += socket.o
+OBJS += poll.o
 
 CFLAGS = -Wall -DDEBUG
 

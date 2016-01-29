@@ -16,7 +16,7 @@ struct poll_event {
 	callback write_callback;
 	callback close_callback;
 	callback accept_callback;
-	UT_hash_table hh;	/* make poll_event hashable */
+	UT_hash_handle hh;	/* make poll_event hashable */
 };
 
 int epoll_new(void);
@@ -26,6 +26,6 @@ void add_write_callback(poll_event_t *poll_event, callback write_callback);
 void add_close_callback(poll_event_t *poll_event, callback close_callback);
 void add_accept_callback(poll_event_t *poll_event, callback accept_callback);
 void poll_event_del(int epoll_fd, int fd);
-int poll_event_process(const poll_event_t *poll_event);
+void poll_event_process(int epoll_fd);
 
 #endif	/* _POLL_H_ */
