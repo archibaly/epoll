@@ -117,17 +117,17 @@ void poll_event_process(int epoll_fd)
 			if (event) {
 				if ((events[i].events & EPOLLIN) || (events[i].events & EPOLLPRI)) {
 					if (event->accept_callback)
-						event->accept_callback(event, events[i]);
+						event->accept_callback(event);
 					if (event->read_callback)
-						event->read_callback(event, events[i]);
+						event->read_callback(event);
 				}
 				if (events[i].events & EPOLLOUT) {
 					if (event->write_callback)
-						event->write_callback(event, events[i]);
+						event->write_callback(event);
 				}
 				if ((events[i].events & EPOLLRDHUP) || (events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP)) {
 					if (event->close_callback)
-						event->close_callback(event, events[i]);
+						event->close_callback(event);
 				}
 			}
 		}

@@ -6,11 +6,10 @@
 
 typedef struct poll_event poll_event_t;
 
-typedef void (*callback)(const poll_event_t *, struct epoll_event);
+typedef void (*callback)(const poll_event_t *);
 
 struct poll_event {
 	int fd;				/* fd to monitor */
-	void *data;
 	uint32_t events;	/* EPOLLIN, EPOLLET, etc... */
 	callback read_callback;
 	callback write_callback;

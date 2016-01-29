@@ -1,42 +1,41 @@
 #include <stdio.h>
 #include <unistd.h>
-#include <sys/epoll.h>
 #include <netinet/in.h>
 
 #include "socket.h"
 #include "poll.h"
+#include "writen.h"
 
-#define LOCAL_PORT		1991
-#define BUFFER_SIZE		1024
-#define UNUSED_PARM(x)	(void)x
+
+#define LOCAL_PORT	1991
+#define BUFFER_SIZE	1024
 
 
 static int epoll_fd = -1;
 
 
-void read_cb(const poll_event_t *poll_event, struct epoll_event events)
+void read_cb(const poll_event_t *poll_event)
 {
-	UNUSED_PARM(events);
 	char read_buf[BUFFER_SIZE];
 	int n = read(poll_event->fd, read_buf, BUFFER_SIZE - 1);
 	if (n > 0) {
 		read_buf[n] = 0;
 		printf("received data: %s\n", read_buf);
+		/* write back */
+		writen(poll_event->fd, read_buf, n);
 	}
 }
 
-void close_cb(const poll_event_t *poll_event, struct epoll_event events)
+void close_cb(const poll_event_t *poll_event)
 {
-	UNUSED_PARM(events);
 #ifdef DEBUG
 	printf("in close_cb\n");
 #endif
 	poll_event_del(epoll_fd, poll_event->fd);
 }
 
-void accept_cb(const poll_event_t *poll_event, struct epoll_event events)
+void accept_cb(const poll_event_t *poll_event)
 {
-	UNUSED_PARM(events);
 	struct sockaddr in_addr;
 	socklen_t in_len = sizeof(struct sockaddr);
 	int connfd = accept(poll_event->fd, &in_addr, &in_len);
