@@ -46,61 +46,38 @@ static void socket_reuse_endpoint(int sockfd)
 	}
 }
 
-
-int socket_create_and_bind(char *port)
+int socket_create(void)
 {
-	struct addrinfo hints;
-	struct addrinfo *result, *rp;
-	int ret, sockfd;
-
-	/* 
+	int sockfd;
+	/*
 	 * Don't let the system abort the application when it tries to send bytes
 	 * through a connection already closed by the client
 	 */
 	signal(SIGPIPE, SIG_IGN);
-
-	memset(&hints, 0, sizeof(struct addrinfo));
-	hints.ai_family = AF_UNSPEC;		/* Return IPv4 and IPv6 choices */
-	hints.ai_socktype = SOCK_STREAM;	/* We want a TCP socket */
-	hints.ai_flags = AI_PASSIVE;		/* All interfaces */
-
-	ret = getaddrinfo(NULL, port, &hints, &result);
-	if (ret != 0) {
+	if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 	#ifdef DEBUG
-		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(ret));
+		perror("socket");
 	#endif
 		abort();
 	}
-
-	for (rp = result; rp != NULL; rp = rp->ai_next) {
-		sockfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
-		if (sockfd == -1)
-			continue;
-		socket_reuse_endpoint(sockfd);
-		ret = bind(sockfd, rp->ai_addr, rp->ai_addrlen);
-		if (ret == 0) {
-			/* We managed to bind successfully */
-			break;
-		}
-
-		if (close(sockfd) == -1) {
-		#ifdef DEBUG
-			perror("close");
-		#endif
-			abort();
-		}
-	}
-
-	if (rp == NULL) {
-	#ifdef DEBUG
-		fprintf(stderr, "Could not bind\n");
-	#endif
-		abort();
-	}
-
-	freeaddrinfo(result);
-
+	socket_reuse_endpoint(sockfd);
 	return sockfd;
+}
+
+void socket_bind(int sockfd, unsigned short port)
+{
+	struct sockaddr_in server_addr;
+
+	bzero(&server_addr, sizeof(server_addr));
+	server_addr.sin_family = AF_INET;
+	server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	server_addr.sin_port = htons(port);
+	if (bind(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+	#ifdef DEBUG
+		perror("bind");
+	#endif
+		abort();
+	}
 }
 
 void socket_start_listening(int sockfd)

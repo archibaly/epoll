@@ -21,7 +21,8 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	sockfd = socket_create_and_bind(argv[1]);
+	sockfd = socket_create();
+	socket_bind(sockfd, atoi(argv[1]));
 	socket_set_non_blocking(sockfd);
 	socket_start_listening(sockfd);
 
