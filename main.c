@@ -1,15 +1,14 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <sys/epoll.h>
 #include <netinet/in.h>
 
 #include "socket.h"
 #include "poll.h"
 #include "writen.h"
 
-
 #define LOCAL_PORT	1991
 #define BUFFER_SIZE	1024
-
 
 static int epoll_fd = -1;
 
@@ -26,6 +25,7 @@ void read_cb(const poll_event_t *poll_event)
 	}
 }
 
+
 void close_cb(const poll_event_t *poll_event)
 {
 #ifdef DEBUG
@@ -33,6 +33,7 @@ void close_cb(const poll_event_t *poll_event)
 #endif
 	poll_event_del(epoll_fd, poll_event->fd);
 }
+
 
 void accept_cb(const poll_event_t *poll_event)
 {
@@ -48,6 +49,7 @@ void accept_cb(const poll_event_t *poll_event)
 	add_read_callback(event, read_cb);
 	add_close_callback(event, close_cb);
 }
+
 
 int main()
 {

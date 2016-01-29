@@ -31,6 +31,7 @@ void socket_set_non_blocking(int sockfd)
 	}
 }
 
+
 static void socket_reuse_endpoint(int sockfd)
 {
 	int reuse = 1;
@@ -45,6 +46,7 @@ static void socket_reuse_endpoint(int sockfd)
 		abort();
 	}
 }
+
 
 int socket_create(void)
 {
@@ -64,6 +66,7 @@ int socket_create(void)
 	return sockfd;
 }
 
+
 void socket_bind(int sockfd, unsigned short port)
 {
 	struct sockaddr_in server_addr;
@@ -79,6 +82,7 @@ void socket_bind(int sockfd, unsigned short port)
 		abort();
 	}
 }
+
 
 void socket_start_listening(int sockfd)
 {

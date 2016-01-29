@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <stdio.h>
+#include <sys/epoll.h>
 
 #include "poll.h"
 
@@ -20,7 +21,8 @@ int epoll_new(void)
 	return epoll_fd;
 }
 
-poll_event_t *poll_event_new(int fd, uint32_t events)
+
+static poll_event_t *poll_event_new(int fd, uint32_t events)
 {
 	poll_event_t *event = calloc(1, sizeof(poll_event_t));
 
@@ -32,7 +34,8 @@ poll_event_t *poll_event_new(int fd, uint32_t events)
 	return event;
 }
 
-int epoll_ctl_mod(int epoll_fd, int fd, uint32_t events)
+
+static int epoll_ctl_mod(int epoll_fd, int fd, uint32_t events)
 {
 	struct epoll_event event;
 	memset(&event, 0, sizeof(struct epoll_event));
@@ -41,7 +44,8 @@ int epoll_ctl_mod(int epoll_fd, int fd, uint32_t events)
 	return epoll_ctl(epoll_fd, EPOLL_CTL_MOD, fd, &event);
 }
 
-int epoll_ctl_add(int epoll_fd, int fd, uint32_t events)
+
+static int epoll_ctl_add(int epoll_fd, int fd, uint32_t events)
 {
 	struct epoll_event event;
 	memset(&event, 0, sizeof(struct epoll_event));
@@ -49,6 +53,7 @@ int epoll_ctl_add(int epoll_fd, int fd, uint32_t events)
 	event.events = events;
 	return epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &event);
 }
+
 
 /*
  * out: poll_event
@@ -68,11 +73,13 @@ int poll_event_add(int epoll_fd, int fd, uint32_t events, poll_event_t **poll_ev
 	}
 }
 
+
 void add_read_callback(poll_event_t *poll_event, callback read_callback)
 {
 	if (poll_event)
 		poll_event->read_callback = read_callback;
 }
+
 
 void add_write_callback(poll_event_t *poll_event, callback write_callback)
 {
@@ -80,17 +87,20 @@ void add_write_callback(poll_event_t *poll_event, callback write_callback)
 		poll_event->write_callback = write_callback;
 }
 
+
 void add_close_callback(poll_event_t *poll_event, callback close_callback)
 {
 	if (poll_event)
 		poll_event->close_callback = close_callback;
 }
 
+
 void add_accept_callback(poll_event_t *poll_event, callback accept_callback)
 {
 	if (poll_event)
 		poll_event->accept_callback = accept_callback;
 }
+
 
 void poll_event_del(int epoll_fd, int fd)
 {
@@ -103,6 +113,7 @@ void poll_event_del(int epoll_fd, int fd)
 		free(event);
 	}
 }
+
 
 void poll_event_process(int epoll_fd)
 {

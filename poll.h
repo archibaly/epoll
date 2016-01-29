@@ -2,7 +2,6 @@
 #define _POLL_H_
 
 #include "uthash.h"
-#include <sys/epoll.h>
 
 typedef struct poll_event poll_event_t;
 
