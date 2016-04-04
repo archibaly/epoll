@@ -3,15 +3,15 @@
 #include <sys/epoll.h>
 #include <netinet/in.h>
 
+#include "debug.h"
 #include "socket.h"
 #include "poll.h"
 #include "writen.h"
+#include "config.h"
 
-#define LOCAL_PORT	1991
 #define BUFFER_SIZE	1024
 
 static int epoll_fd = -1;
-
 
 void read_cb(const poll_event_t *poll_event)
 {
@@ -28,9 +28,7 @@ void read_cb(const poll_event_t *poll_event)
 
 void close_cb(const poll_event_t *poll_event)
 {
-#ifdef DEBUG
-	printf("in close_cb\n");
-#endif
+	INFO("in close_cb\n");
 	poll_event_del(epoll_fd, poll_event->fd);
 }
 
@@ -41,9 +39,7 @@ void accept_cb(const poll_event_t *poll_event)
 	socklen_t in_len = sizeof(struct sockaddr);
 	int connfd = accept(poll_event->fd, &in_addr, &in_len);
 	socket_set_non_blocking(connfd);
-#ifdef DEBUG
-	printf("get the socket %d\n", connfd);
-#endif
+	INFO("get the socket %d\n", connfd);
 	poll_event_t *event;
 	poll_event_add(epoll_fd, connfd, EPOLLIN | EPOLLRDHUP, &event);
 	add_read_callback(event, read_cb);
@@ -54,9 +50,13 @@ void accept_cb(const poll_event_t *poll_event)
 int main()
 {
 	int sockfd;
+	unsigned short port;
+
+	config_load("epoll.conf");
+	port = atoi(config_get_value("server_port"));
 
 	sockfd = socket_create();
-	socket_bind(sockfd, LOCAL_PORT);
+	socket_bind(sockfd, port);
 	socket_set_non_blocking(sockfd);
 	socket_start_listening(sockfd);
 

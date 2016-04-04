@@ -1,24 +1,16 @@
 CC = gcc
 EXE = epoll
 
-SRCS += main.c
-SRCS += socket.c
-SRCS += poll.c
-SRCS += writen.c
-
-OBJS += main.o
-OBJS += socket.o
-OBJS += poll.o
-OBJS += writen.o
-
 CFLAGS = -Wall -DDEBUG
 
-all: $(EXE)
+$(EXE): main.o socket.o poll.o writen.o config.o
+	$(CC) -o $@ $^
 
-$(EXE): $(OBJS)
-	$(CC) -o $@ $^ $(CFLAGS)
-
-$(OBJS): $(SRCS)
+main.o: main.c socket.h poll.h writen.h
+socket.o: socket.c socket.h
+poll.o: poll.c poll.h
+writen.o: writen.c writen.h
+config.o: config.c config.h debug.h
 
 clean:
 	-rm -f *.o $(EXE)

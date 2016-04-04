@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <sys/epoll.h>
 
+#include "debug.h"
 #include "poll.h"
 
 #define MAX_EVENTS	64
@@ -13,9 +14,7 @@ int epoll_new(void)
 	int epoll_fd;
 	epoll_fd = epoll_create(MAX_EVENTS);
 	if (epoll_fd == -1) {
-	#ifdef DEBUG
-		perror("epoll_create");
-	#endif
+		ERROR("epoll_create()");
 		abort();
 	}
 	return epoll_fd;
