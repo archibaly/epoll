@@ -1,5 +1,6 @@
-#include <unistd.h>
 #include <stdio.h>
+#include <errno.h>
+#include <unistd.h>
 #include <sys/epoll.h>
 
 #include "debug.h"
@@ -14,7 +15,7 @@ int epoll_new(void)
 	int epoll_fd;
 	epoll_fd = epoll_create(MAX_EVENTS);
 	if (epoll_fd == -1) {
-		ERROR("epoll_create()");
+		debug("epoll_create(): %s", strerror(errno));
 		abort();
 	}
 	return epoll_fd;
@@ -117,6 +118,7 @@ void poll_event_del(int epoll_fd, int fd)
 void poll_event_process(int epoll_fd)
 {
 	struct epoll_event events[MAX_EVENTS];
+
 	for (;;) {
 		int fds = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
 
@@ -135,7 +137,8 @@ void poll_event_process(int epoll_fd)
 					if (event->write_callback)
 						event->write_callback(event);
 				}
-				if ((events[i].events & EPOLLRDHUP) || (events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP)) {
+				if ((events[i].events & EPOLLRDHUP) || (events[i].events & EPOLLERR) ||
+					(events[i].events & EPOLLHUP)) {
 					if (event->close_callback)
 						event->close_callback(event);
 				}

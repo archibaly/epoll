@@ -14,7 +14,7 @@ struct poll_event {
 	callback write_callback;
 	callback close_callback;
 	callback accept_callback;
-	UT_hash_handle hh;	/* make poll_event hashable */
+	ut_hash_handle hh;	/* make poll_event hashable */
 };
 
 int epoll_new(void);

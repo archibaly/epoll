@@ -13,4 +13,4 @@ writen.o: writen.c writen.h
 config.o: config.c config.h debug.h
 
 clean:
-	-rm -f *.o $(EXE)
+	-rm -f *.o tags $(EXE)
