@@ -4,14 +4,15 @@
 #include <stdarg.h>
 #include <ctype.h>
 
+#include "hash.h"
 #include "debug.h"
 #include "config.h"
 
-#define DQUOTE		'"'
+#define DQUOTE				'"'
+#define END_LINE(c)			(c == '\n' || c == '\0')
+#define HASH_NUM_BUCKETS	32
 
-#define END_LINE(c)	(c == '\n' || c == '\0')
-
-static config_opt_t *config_table = NULL;
+static struct hlist_head *config_table;
 
 static char delim = '=';
 static char comment = '#';
@@ -35,11 +36,16 @@ static config_opt_t *new_config_opt(const char *name, const char *value)
 static config_opt_t *config_add_opt(const char *name, const char *value)
 {
 	config_opt_t *opt;
+	struct hash_node *node;
 
-	HASH_FIND_STR(config_table, name, opt);
-	if (opt == NULL) {
+	int n = hash_find(config_table, name, &node, 1);
+	debug("n = %d", n);
+
+	if (n <= 0) {
 		opt = new_config_opt(name, value);
-		HASH_ADD_STR(config_table, name, opt);
+		hash_add(config_table, name, opt);
+	} else {
+		opt = node->value;
 	}
 
 	return opt;
@@ -48,8 +54,15 @@ static config_opt_t *config_add_opt(const char *name, const char *value)
 static config_opt_t *config_get_opt(const char *name)
 {
 	config_opt_t *opt;
+	struct hash_node *node;
 
-	HASH_FIND_STR(config_table, name, opt);
+	int n = hash_find(config_table, name, &node, 1);
+	debug("n = %d", n);
+
+	if (n > 0)
+		opt = node->value;
+	else
+		opt = NULL;
 
 	return opt;
 }
@@ -92,7 +105,6 @@ void config_print_opt(const char *name)
 	config_opt_t *opt;
 
 	opt = config_get_opt(name);
-
 	if (opt == NULL) {
 		fprintf(stdout, "NULL => NULL\n");
 		return;
@@ -169,6 +181,9 @@ int config_load(const char *filename)
 	FILE *fp;
 	char line[1024];
 
+	if (!(config_table = hash_init(HASH_NUM_BUCKETS)))
+		return -1;
+
 	if ((fp = fopen(filename, "r")) == NULL)
 		return -1;
 
@@ -201,18 +216,25 @@ int config_save(const char *filename)
 {
 	FILE *fp;
 	char line[1024];
-	config_opt_t *opt, *tmp;
 
 	if ((fp = fopen(filename, "w")) == NULL)
 		return -1;
 
-	HASH_ITER(hh, config_table, opt, tmp) {
-		if (has_space(opt->value))
-			sprintf(line, "%s %c \"%s\"\n", opt->name, delim, opt->value);
-		else
-			sprintf(line, "%s %c %s\n", opt->name, delim, opt->value);
-		fputs(line, fp);
+	int i;
+	struct hash_node *pos;
+	config_opt_t *opt;
+	
+	for (i = 0; i < HASH_NUM_BUCKETS; i++) {
+		hlist_for_each_entry(pos, config_table + i, node) {
+			opt = pos->value;
+			if (has_space(opt->value))
+				sprintf(line, "%s %c \"%s\"\n", opt->name, delim, opt->value);
+			else
+				sprintf(line, "%s %c %s\n", opt->name, delim, opt->value);
+			fputs(line, fp);
+		}
 	}
+
 	fclose(fp);
 	return 0;
 }
@@ -226,8 +248,15 @@ static void config_free_opt(config_opt_t *opt)
 
 void config_free(void)
 {
-	config_opt_t *opt, *tmp;
-	HASH_ITER(hh, config_table, opt, tmp) {
-		config_free_opt(opt);
+	int i;
+	struct hash_node *pos;
+	config_opt_t *opt;
+
+	for (i = 0; i < HASH_NUM_BUCKETS; i++) {
+		hlist_for_each_entry(pos, config_table + i, node) {
+			opt = pos->value;
+			config_free_opt(opt);
+		}
 	}
+	hash_free(config_table);
 }

@@ -9,7 +9,7 @@
 #include "writen.h"
 #include "config.h"
 
-#define BUFFER_SIZE	1024
+#define BUFFER_SIZE	4096
 
 static int epoll_fd = -1;
 
@@ -19,7 +19,8 @@ void read_cb(const poll_event_t *poll_event)
 	int n = read(poll_event->fd, read_buf, BUFFER_SIZE - 1);
 	if (n > 0) {
 		read_buf[n] = 0;
-		printf("received %d bytes: %s\n", n, read_buf);
+		//printf("received %d bytes: %s\n", n, read_buf);
+		printf("%s", read_buf);
 		/* write back */
 		writen(poll_event->fd, read_buf, n);
 	}
