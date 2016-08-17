@@ -8,14 +8,13 @@
 #include "debug.h"
 #include "config.h"
 
-#define DQUOTE				'"'
 #define END_LINE(c)			(c == '\n' || c == '\0')
 #define HASH_NUM_BUCKETS	32
 
-static struct hlist_head *config_table;
-
 static char delim = '=';
 static char comment = '#';
+
+static struct hash_table *config_table;
 
 static config_opt_t *new_config_opt(const char *name, const char *value)
 {
@@ -41,9 +40,9 @@ static config_opt_t *config_add_opt(const char *name, const char *value)
 	int n = hash_find(config_table, name, &node, 1);
 	debug("n = %d", n);
 
-	if (n <= 0) {
+	if (n == 0) {
 		opt = new_config_opt(name, value);
-		hash_add(config_table, name, opt);
+		hash_add(config_table, opt->name, opt);
 	} else {
 		opt = node->value;
 	}
@@ -59,10 +58,10 @@ static config_opt_t *config_get_opt(const char *name)
 	int n = hash_find(config_table, name, &node, 1);
 	debug("n = %d", n);
 
-	if (n > 0)
-		opt = node->value;
-	else
+	if (n == 0)
 		opt = NULL;
+	else
+		opt = node->value;
 
 	return opt;
 }
@@ -123,13 +122,13 @@ static int parse_line(char *string)
 	have_name = have_quote = 0;
 
 	while ((c = *string++) != '\0') {
-		if (c == DQUOTE) {
+		if (c == '"') {
 			if (!have_name) {
-				debug("unexpected '%c'", DQUOTE);
+				debug("unexpected '%c'", '"');
 				return -1;
 			}
 			if (have_quote && !END_LINE(*string)) {
-				debug("unexpected '%c' after '%c'", *string, DQUOTE);
+				debug("unexpected '%c' after '%c'", *string, '"');
 				return -1;
 			}
 			have_quote = !have_quote;
@@ -181,13 +180,13 @@ int config_load(const char *filename)
 	FILE *fp;
 	char line[1024];
 
-	if (!(config_table = hash_init(HASH_NUM_BUCKETS)))
+	if (!(config_table = hash_init(HASH_NUM_BUCKETS, HASH_KEY_TYPE_STR)))
 		return -1;
 
-	if ((fp = fopen(filename, "r")) == NULL)
+	if (!(fp = fopen(filename, "r")))
 		return -1;
 
-	while (fgets(line, sizeof(line), fp) != NULL) {
+	while (fgets(line, sizeof(line), fp)) {
 		/* ignore lines that start with a comment or '\n' character */
 		if (*line == comment || *line == '\n')
 			continue;
@@ -223,9 +222,14 @@ int config_save(const char *filename)
 	int i;
 	struct hash_node *pos;
 	config_opt_t *opt;
+
+	if (!config_table) {
+		fclose(fp);
+		return -1;
+	}
 	
 	for (i = 0; i < HASH_NUM_BUCKETS; i++) {
-		hlist_for_each_entry(pos, config_table + i, node) {
+		hash_for_each_entry(pos, config_table->head + i) {
 			opt = pos->value;
 			if (has_space(opt->value))
 				sprintf(line, "%s %c \"%s\"\n", opt->name, delim, opt->value);
@@ -252,11 +256,15 @@ void config_free(void)
 	struct hash_node *pos;
 	config_opt_t *opt;
 
+	if (!(config_table))
+		return;
+
 	for (i = 0; i < HASH_NUM_BUCKETS; i++) {
-		hlist_for_each_entry(pos, config_table + i, node) {
+		hash_for_each_entry(pos, config_table->head + i) {
 			opt = pos->value;
 			config_free_opt(opt);
 		}
 	}
+
 	hash_free(config_table);
 }

@@ -1,7 +1,7 @@
 #ifndef _POLL_H_
 #define _POLL_H_
 
-#include "uthash.h"
+#include <stdint.h>
 
 typedef struct poll_event poll_event_t;
 
@@ -14,7 +14,6 @@ struct poll_event {
 	callback write_callback;
 	callback close_callback;
 	callback accept_callback;
-	ut_hash_handle hh;	/* make poll_event hashable */
 };
 
 int epoll_new(void);

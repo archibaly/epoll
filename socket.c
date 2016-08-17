@@ -30,10 +30,6 @@ void socket_set_non_blocking(int sockfd)
 
 	flags |= O_NONBLOCK;
 	if (fcntl(sockfd, F_SETFL, flags) == -1) {
-		/*
-		 * if we cannot set sockfd flags then there's something very wrong
-		 * with the system, so we abort the application
-		 */
 		debug("fcntl error: %s", strerror(errno));
 		abort();
 	}
@@ -43,10 +39,6 @@ static void socket_reuse_endpoint(int sockfd)
 {
 	int reuse = 1;
 	if ((setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse))) < 0) {
-		/*
-		 * if we cannot set an option then there's something very wrong
-		 * with the system, so we abort the application
-		 */
 		debug("setsockopt error: %s", strerror(errno));
 		abort();
 	}
