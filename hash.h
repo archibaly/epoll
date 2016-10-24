@@ -7,6 +7,7 @@
 #define HASH_KEY_TYPE_STR	2
 
 #define hash_for_each_entry(pos, head) hlist_for_each_entry(pos, head, node)
+#define hash_for_each_entry_safe(pos, n, head) hlist_for_each_entry_safe(pos, n, head, node)
 #define hash_head hlist_head
 
 struct hash_node {

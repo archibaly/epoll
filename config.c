@@ -11,6 +11,11 @@
 #define END_LINE(c)			(c == '\n' || c == '\0')
 #define HASH_NUM_BUCKETS	32
 
+typedef struct {
+	char *name;
+	char *value;
+} config_opt_t;
+
 static char delim = '=';
 static char comment = '#';
 
@@ -21,13 +26,18 @@ static config_opt_t *new_config_opt(const char *name, const char *value)
 	config_opt_t *opt;
 
 	if (!(opt = malloc(sizeof(config_opt_t))))
-		exit(EXIT_FAILURE);
+		return NULL;
 
-	if (!(opt->name = strdup(name)))
-		exit(EXIT_FAILURE);
+	if (!(opt->name = strdup(name))) {
+		free(opt);
+		return NULL;
+	}
 
-	if (!(opt->value = strdup(value)))
-		exit(EXIT_FAILURE);
+	if (!(opt->value = strdup(value))) {
+		free(opt->name);
+		free(opt);
+		return NULL;
+	}
 
 	return opt;
 }
@@ -38,10 +48,10 @@ static config_opt_t *config_add_opt(const char *name, const char *value)
 	struct hash_node *node;
 
 	int n = hash_find(config_table, name, &node, 1);
-	debug("n = %d", n);
 
 	if (n == 0) {
-		opt = new_config_opt(name, value);
+		if (!(opt = new_config_opt(name, value)))
+			return NULL;
 		hash_add(config_table, opt->name, opt);
 	} else {
 		opt = node->value;
@@ -56,7 +66,6 @@ static config_opt_t *config_get_opt(const char *name)
 	struct hash_node *node;
 
 	int n = hash_find(config_table, name, &node, 1);
-	debug("n = %d", n);
 
 	if (n == 0)
 		opt = NULL;
@@ -81,17 +90,19 @@ char *config_get_value(const char *name)
 	return value;
 }
 
-void config_set_value(const char *name, const char *value)
+int config_set_value(const char *name, const char *value)
 {
 	config_opt_t *opt;
 	opt = config_get_opt(name);
 	if (opt) {
 		free(opt->value);
 		if (!(opt->value = strdup(value)))
-			exit(EXIT_FAILURE);
+			return -1;
 	} else {
-		config_add_opt(name, value);
+		if (!config_add_opt(name, value))
+			return -1;
 	}
+	return 0;
 }
 
 void config_set_delim(char d)
@@ -170,11 +181,6 @@ static int parse_line(char *string)
 	return 0;
 }
 
-/*
- * load config file
- * @return: 0 - success;
- *         -1 - failed
- */
 int config_load(const char *filename)
 {
 	FILE *fp;
@@ -227,7 +233,7 @@ int config_save(const char *filename)
 		fclose(fp);
 		return -1;
 	}
-	
+
 	for (i = 0; i < HASH_NUM_BUCKETS; i++) {
 		hash_for_each_entry(pos, config_table->head + i) {
 			opt = pos->value;
