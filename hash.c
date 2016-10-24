@@ -150,7 +150,7 @@ int hash_find(struct hash_table *table, const void *key,
 	}
 }
 
-void hash_free_node(struct hash_node *node)
+void hash_del(struct hash_node *node)
 {
 	if (!node)
 		return;
@@ -173,7 +173,7 @@ void hash_free(struct hash_table *table)
 
 	for (i = 0; i < table->size; i++) {
 		hash_for_each_entry_safe(pos, tmp, table->head + i) {
-			hash_free_node(pos);
+			hash_del(pos);
 		}
 	}
 

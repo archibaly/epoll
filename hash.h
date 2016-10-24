@@ -26,7 +26,7 @@ struct hash_table *hash_init(int size, int key_type);
 int hash_add(struct hash_table *table, void *key, void *value);
 int hash_find(struct hash_table *table, const void *key,
 			  struct hash_node **node, size_t size);
-void hash_free_node(struct hash_node *node);
+void hash_del(struct hash_node *node);
 void hash_free(struct hash_table *table);
 
 #endif /* _HASH_H_ */

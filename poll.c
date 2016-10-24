@@ -123,7 +123,7 @@ void poll_event_del(int epoll_fd, int fd)
 		epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
 		close(fd);
 		free(event);
-		hash_free_node(node);
+		hash_del(node);
 	}
 }
 
