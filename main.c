@@ -1,7 +1,8 @@
 #include <stdio.h>
+#include <string.h>
+#include <errno.h>
 #include <unistd.h>
 #include <sys/epoll.h>
-#include <netinet/in.h>
 
 #include "debug.h"
 #include "socket.h"
@@ -35,12 +36,18 @@ void close_cb(const poll_event_t *poll_event)
 
 void accept_cb(const poll_event_t *poll_event)
 {
-	struct sockaddr in_addr;
-	socklen_t in_len = sizeof(struct sockaddr);
-	int connfd = accept(poll_event->fd, &in_addr, &in_len);
-	socket_set_non_blocking(connfd);
+	int connfd = socket_accept(poll_event->fd, NULL, 0);
+	if (connfd < 0) {
+		debug("socket_accept error: %s", strerror(errno));
+		return;
+	}
+
 	debug("get socket %d", connfd);
+
+	socket_set_non_blocking(connfd);
+
 	poll_event_t *event;
+
 	poll_event_add(epoll_fd, connfd, EPOLLIN | EPOLLRDHUP, &event);
 	add_read_callback(event, read_cb);
 	add_close_callback(event, close_cb);
