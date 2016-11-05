@@ -26,7 +26,7 @@ void dump_hex(const unsigned char* data, int len, const char* txt)
 			printf("\n");
 		printf("%02x", data[i]);
 	}
-	printf("\n");
+	printf("\n\n");
 }
 
 
