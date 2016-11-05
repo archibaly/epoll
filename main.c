@@ -14,15 +14,29 @@
 
 static int epoll_fd = -1;
 
+void dump_hex(const unsigned char* data, int len, const char* txt)
+{
+	int i;
+	if (txt != NULL)
+		printf("%s: ", txt);
+	for (i=0; i < len; i++) {
+		if ((i % 2) == 0)
+			printf(" ");
+		if ((i % 16) == 0)
+			printf("\n");
+		printf("%02x", data[i]);
+	}
+	printf("\n");
+}
+
+
 void read_cb(const poll_event_t *poll_event)
 {
-	char read_buf[BUFFER_SIZE];
+	unsigned char read_buf[BUFFER_SIZE];
 	int n = read(poll_event->fd, read_buf, BUFFER_SIZE - 1);
 	if (n > 0) {
-		read_buf[n] = 0;
-		printf("received %d bytes: %s\n", n, read_buf);
-		/* write back */
-		writen(poll_event->fd, read_buf, n);
+		printf("received %d bytes:", n);
+		dump_hex(read_buf, n, NULL);
 	}
 }
 
