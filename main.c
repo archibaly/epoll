@@ -10,7 +10,8 @@
 #include "writen.h"
 #include "config.h"
 
-#define BUFFER_SIZE	4096
+/* #define BUFFER_SIZE	4096 */
+#define BUFFER_SIZE	8
 
 static int epoll_fd = -1;
 
@@ -32,11 +33,22 @@ void dump_hex(const unsigned char* data, int len, const char* txt)
 
 void read_cb(const poll_event_t *poll_event)
 {
+	int n;
 	unsigned char read_buf[BUFFER_SIZE];
-	int n = read(poll_event->fd, read_buf, BUFFER_SIZE - 1);
-	if (n > 0) {
-		printf("received %d bytes:", n);
-		dump_hex(read_buf, n, NULL);
+
+	for (;;) {
+		n = read(poll_event->fd, read_buf, BUFFER_SIZE - 1);
+		if (n > 0) {
+			printf("received %d bytes:", n);
+			dump_hex(read_buf, n, NULL);
+		} else if (n < 0) {
+			if (errno == EAGAIN || errno == EWOULDBLOCK) {
+				debug("read done");
+				break;
+			}
+			debug("read(): %s", strerror(errno));
+			break;
+		}
 	}
 }
 
@@ -62,7 +74,7 @@ void accept_cb(const poll_event_t *poll_event)
 
 	poll_event_t *event;
 
-	poll_event_add(epoll_fd, connfd, EPOLLIN | EPOLLRDHUP, &event);
+	poll_event_add(epoll_fd, connfd, EPOLLIN | EPOLLET | EPOLLRDHUP, &event);
 	add_read_callback(event, read_cb);
 	add_close_callback(event, close_cb);
 }
