@@ -10,7 +10,6 @@
 #include "writen.h"
 #include "config.h"
 
-/* #define BUFFER_SIZE	4096 */
 #define BUFFER_SIZE	8
 
 static int epoll_fd = -1;
@@ -37,11 +36,14 @@ void read_cb(const poll_event_t *poll_event)
 	unsigned char read_buf[BUFFER_SIZE];
 
 	for (;;) {
-		n = read(poll_event->fd, read_buf, BUFFER_SIZE - 1);
+		n = read(poll_event->fd, read_buf, BUFFER_SIZE);
 		if (n > 0) {
 			printf("received %d bytes:", n);
 			dump_hex(read_buf, n, NULL);
-		} else if (n < 0) {
+		} else if (n == 0) {	/* the peer closed */
+			debug("EOF");
+			break;
+		} else {
 			if (errno == EAGAIN || errno == EWOULDBLOCK) {
 				debug("read done");
 				break;

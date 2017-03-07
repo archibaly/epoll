@@ -1,7 +1,7 @@
 CC = cc
 EXE = epoll
 
-CFLAGS = -Wall #-DDEBUG
+CFLAGS = -Wall -DDEBUG
 LDFLAGS = -lm
 
 $(EXE): main.o socket.o poll.o writen.o config.o hash.o
